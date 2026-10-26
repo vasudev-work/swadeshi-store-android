@@ -1,0 +1,79 @@
+plugins {
+    id 'com.android.application'
+}
+
+def ksFile = rootProject.file("keystore.properties")
+def ks = new Properties()
+if (ksFile.exists()) { ks.load(new FileInputStream(ksFile)) }
+
+android {
+    namespace 'com.vasudev.swadeshistore'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.vasudev.swadeshistore"
+        minSdk 21
+        targetSdk 34
+        versionCode 110
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        release {
+            if (ksFile.exists()) {
+                storeFile file(ks['storeFile'])
+                storePassword ks['storePassword']
+                keyAlias ks['keyAlias']
+                keyPassword ks['keyPassword']
+            }
+        }
+        debug {
+            // A fixed debug key kept with the project (gitignored) so TEST builds update
+            // over each other, instead of changing key on every machine.
+            def dk = rootProject.file('swadeshi-debug.keystore')
+            if (dk.exists()) {
+                storeFile dk
+                storePassword 'swadeshi-debug'
+                keyAlias 'swadeshi-debug'
+                keyPassword 'swadeshi-debug'
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            // Signed with the fixed debug key kept with the project. TEST builds are
+            // debug-signed and must never be published.
+            if (rootProject.file('swadeshi-debug.keystore').exists()) signingConfig signingConfigs.debug
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-test"
+            debuggable true
+            minifyEnabled false
+            shrinkResources false
+        }
+        release {
+            debuggable false
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (ksFile.exists()) { signingConfig signingConfigs.release }
+        }
+    }
+
+    buildFeatures { buildConfig true }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Test-only. This never ships in the app: the app itself has no third-party dependencies.
+    testImplementation 'junit:junit:4.13.2'
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_saffron">#FF8F00</color>
+    <color name="brand_green">#0F9D58</color>
+    <color name="brand_indigo">#1A237E</color>
+    <color name="surface_light">#FFFFFF</color>
+</resources>
