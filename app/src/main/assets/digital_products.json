@@ -1,0 +1,722 @@
+[
+ {
+  "name": "Bhuvan",
+  "developer": "National Remote Sensing Centre",
+  "city": "Hyderabad",
+  "state": "Telangana",
+  "pricing": "Free",
+  "website": "https://bhuvan.nrsc.gov.in",
+  "category": "Utilities",
+  "description": "Satellite remote sensing data and services for public use."
+ },
+ {
+  "name": "Document Scanner",
+  "developer": "Lufick Technology Pvt. Ltd.",
+  "city": "Gurugram",
+  "state": "Haryana",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Utilities",
+  "description": "AI document scanner and PDF creator with edge detection and OCR."
+ },
+ {
+  "name": "Epic Browser",
+  "developer": "Hidden Reflex",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Free",
+  "website": "",
+  "category": "Utilities",
+  "description": "Privacy-focused web browser with built-in VPN and tracker blocking."
+ },
+ {
+  "name": "Indus Appstore",
+  "developer": "Indus Appstore Private Limited",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Free",
+  "website": "https://www.indusappstore.com",
+  "category": "Utilities",
+  "description": "Indian app marketplace with discovery in 12+ Indian languages."
+ },
+ {
+  "name": "JioSphere",
+  "developer": "Jio Platforms",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Free",
+  "website": "https://www.jiosphere.com",
+  "category": "Utilities",
+  "description": "Web browser with built-in VPN and ad-blocker for the Indian market."
+ },
+ {
+  "name": "JioSwitch",
+  "developer": "Reliance Jio Digital Services",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Free",
+  "website": "",
+  "category": "Utilities",
+  "description": "Offline file transfer app, positioned as a SHAREit replacement."
+ },
+ {
+  "name": "Kaagaz",
+  "developer": "Ordenado Labs Pvt. Ltd.",
+  "city": "Gurugram",
+  "state": "Haryana",
+  "pricing": "Freemium",
+  "website": "https://kaagaz.app",
+  "category": "Utilities",
+  "description": "Document scanner, PDF tools and poster maker."
+ },
+ {
+  "name": "New UI",
+  "developer": "Method Black Studio",
+  "city": "Pathankot",
+  "state": "Punjab",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Utilities",
+  "description": "Semantic UI framework for building accessible sites and apps."
+ },
+ {
+  "name": "Ola Maps",
+  "developer": "Ola Krutrim",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Free",
+  "website": "",
+  "category": "Utilities",
+  "description": "Navigation and mapping service for Indian roads."
+ },
+ {
+  "name": "Qmamu",
+  "developer": "Qmamu",
+  "city": "Ahmedabad",
+  "state": "Gujarat",
+  "pricing": "Free",
+  "website": "https://qmamu.com",
+  "category": "Utilities",
+  "description": "Indian search engine with web, images, video and news."
+ },
+ {
+  "name": "Ulaa",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Free",
+  "website": "https://ulaa.com",
+  "category": "Utilities",
+  "description": "Privacy-first browser by Zoho with ad blocking and browsing modes."
+ },
+ {
+  "name": "Zoho Vault",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Free",
+  "website": "https://www.zoho.com/vault",
+  "category": "Utilities",
+  "description": "Password manager and digital vault for individuals and teams."
+ },
+ {
+  "name": "AIKosh",
+  "developer": "National e-Governance Division",
+  "city": "New Delhi",
+  "state": "Delhi",
+  "pricing": "Freemium",
+  "website": "https://aikosh.indiaai.gov.in",
+  "category": "Artificial Intelligence",
+  "description": "Datasets, models and toolkits for AI innovation."
+ },
+ {
+  "name": "BharatGen",
+  "developer": "BharatGen",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Paid",
+  "website": "https://bharatgen.com",
+  "category": "Artificial Intelligence",
+  "description": "Government-backed multilingual LLMs and open-weight models."
+ },
+ {
+  "name": "Gan.AI",
+  "developer": "Gan.AI",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Paid",
+  "website": "",
+  "category": "Artificial Intelligence",
+  "description": "Text-to-video with AI avatars, scenes and voiceovers."
+ },
+ {
+  "name": "Gnani AI",
+  "developer": "Gnani.ai",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Paid",
+  "website": "https://gnani.ai",
+  "category": "Artificial Intelligence",
+  "description": "Conversational voice AI for enterprises in 40+ languages."
+ },
+ {
+  "name": "Haptik",
+  "developer": "Haptik (Jio)",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Paid",
+  "website": "https://www.haptik.ai",
+  "category": "Artificial Intelligence",
+  "description": "AI agents for customer support and automation."
+ },
+ {
+  "name": "Krutrim AI Studio",
+  "developer": "Ola Krutrim",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Freemium",
+  "website": "https://www.olakrutrim.com",
+  "category": "Artificial Intelligence",
+  "description": "No-code AI model development platform with model catalogue."
+ },
+ {
+  "name": "Krutrim Assistant",
+  "developer": "Ola Krutrim",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Free",
+  "website": "https://www.olakrutrim.com",
+  "category": "Artificial Intelligence",
+  "description": "Multilingual AI assistant for everyday tasks."
+ },
+ {
+  "name": "Sarvam Samvaad",
+  "developer": "Sarvam AI",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Paid",
+  "website": "https://www.sarvam.ai",
+  "category": "Artificial Intelligence",
+  "description": "Conversational AI agents in 11 Indian languages."
+ },
+ {
+  "name": "Sarvam Speech API",
+  "developer": "Sarvam AI",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Paid",
+  "website": "https://www.sarvam.ai",
+  "category": "Artificial Intelligence",
+  "description": "Speech-to-text, text-to-speech and speech translation APIs."
+ },
+ {
+  "name": "Sarvam Translate",
+  "developer": "Sarvam AI",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Paid",
+  "website": "https://www.sarvam.ai",
+  "category": "Artificial Intelligence",
+  "description": "Translation across 22 Indian languages, speech and text."
+ },
+ {
+  "name": "Scira AI",
+  "developer": "Scira AI",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Freemium",
+  "website": "https://scira.ai",
+  "category": "Artificial Intelligence",
+  "description": "AI search engine that cites its sources."
+ },
+ {
+  "name": "Soket AI",
+  "developer": "Soket AI Labs",
+  "city": "Gurugram",
+  "state": "Haryana",
+  "pricing": "Paid",
+  "website": "https://www.soket.ai",
+  "category": "Artificial Intelligence",
+  "description": "Sovereign AI models and agents for regulated work."
+ },
+ {
+  "name": "Supernova AI",
+  "developer": "L8 Cones Interactive Private Limited",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Artificial Intelligence",
+  "description": "AI tool for automating design and development workflows."
+ },
+ {
+  "name": "Arattai",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Free",
+  "website": "",
+  "category": "Communication",
+  "description": "Instant messaging, integrated with the Zoho ecosystem."
+ },
+ {
+  "name": "Exotel",
+  "developer": "Exotel Techcom",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Paid",
+  "website": "",
+  "category": "Communication",
+  "description": "Cloud telephony with voice, SMS and video calling APIs."
+ },
+ {
+  "name": "Jio Meet",
+  "developer": "Jio Platforms",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Free",
+  "website": "",
+  "category": "Communication",
+  "description": "Video conferencing with HD calls and screen sharing."
+ },
+ {
+  "name": "JioChat",
+  "developer": "Jio Platforms",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Free",
+  "website": "",
+  "category": "Communication",
+  "description": "Instant messaging built on Jio's telecom user base."
+ },
+ {
+  "name": "JioSafe",
+  "developer": "Jio Platforms Limited",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Free",
+  "website": "",
+  "category": "Communication",
+  "description": "Encrypted voice and video calling with quantum-resistant security."
+ },
+ {
+  "name": "Kommunicate",
+  "developer": "Kommunicate",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Communication",
+  "description": "Customer communication with live chat, chatbots and helpdesk."
+ },
+ {
+  "name": "Krutrim Contact Center",
+  "developer": "Ola Krutrim",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Paid",
+  "website": "",
+  "category": "Communication",
+  "description": "Automated multilingual customer support for enterprises."
+ },
+ {
+  "name": "MSG91",
+  "developer": "MSG91",
+  "city": "Indore",
+  "state": "Madhya Pradesh",
+  "pricing": "Paid",
+  "website": "",
+  "category": "Communication",
+  "description": "SMS, email, WhatsApp, voice and OTP APIs for businesses."
+ },
+ {
+  "name": "Sandes",
+  "developer": "National Informatics Centre",
+  "city": "New Delhi",
+  "state": "Delhi",
+  "pricing": "Free",
+  "website": "",
+  "category": "Communication",
+  "description": "Government messaging platform under Atma Nirbhar Bharat."
+ },
+ {
+  "name": "Troop Messenger",
+  "developer": "Tvisha Systems Pvt Ltd",
+  "city": "Hyderabad",
+  "state": "Telangana",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Communication",
+  "description": "Enterprise team communication platform."
+ },
+ {
+  "name": "Vani HQ",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Communication",
+  "description": "Visual collaboration canvas with video catchups and voice notes."
+ },
+ {
+  "name": "VideoMeet",
+  "developer": "Data Ingenious Global Ltd",
+  "city": "Jaipur",
+  "state": "Rajasthan",
+  "pricing": "Free",
+  "website": "",
+  "category": "Communication",
+  "description": "Government-backed video conferencing platform."
+ },
+ {
+  "name": "Zoho Cliq",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Communication",
+  "description": "Team collaboration and chat, integrated with Zoho."
+ },
+ {
+  "name": "Zoho Connect",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Communication",
+  "description": "Team collaboration and social intranet platform."
+ },
+ {
+  "name": "Zoho Meeting",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Communication",
+  "description": "Video conferencing integrated with Zoho Workplace."
+ },
+ {
+  "name": "Zoho ShowTime",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Communication",
+  "description": "Webinar and remote training platform with polling and Q&A."
+ },
+ {
+  "name": "AdonisJS",
+  "developer": "Foster Studio",
+  "city": "Faridabad",
+  "state": "Haryana",
+  "pricing": "Free",
+  "website": "",
+  "category": "Development",
+  "description": "Batteries-included TypeScript web framework."
+ },
+ {
+  "name": "BrowserStack",
+  "developer": "BrowserStack Inc",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Paid",
+  "website": "",
+  "category": "Development",
+  "description": "Cross-browser testing platform for web and mobile."
+ },
+ {
+  "name": "Bruno",
+  "developer": "Bruno Software",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Free",
+  "website": "",
+  "category": "Development",
+  "description": "Lightweight, open-source API client."
+ },
+ {
+  "name": "CtrlS Cloud",
+  "developer": "CtrlS Datacenters",
+  "city": "Hyderabad",
+  "state": "Telangana",
+  "pricing": "Paid",
+  "website": "",
+  "category": "Development",
+  "description": "Cloud services, hosting and managed services."
+ },
+ {
+  "name": "E2E Cloud",
+  "developer": "E2E Networks",
+  "city": "New Delhi",
+  "state": "Delhi",
+  "pricing": "Paid",
+  "website": "",
+  "category": "Development",
+  "description": "Cloud infrastructure with compute, storage and AI services."
+ },
+ {
+  "name": "Hoppscotch",
+  "developer": "Hoppscotch",
+  "city": "Kochi",
+  "state": "Kerala",
+  "pricing": "Free",
+  "website": "",
+  "category": "Development",
+  "description": "Open-source API development ecosystem."
+ },
+ {
+  "name": "Krutrim Cloud",
+  "developer": "Ola Krutrim",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Paid",
+  "website": "",
+  "category": "Development",
+  "description": "GPU cloud and AI computing platform."
+ },
+ {
+  "name": "mappls",
+  "developer": "MapmyIndia",
+  "city": "New Delhi",
+  "state": "Delhi",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Development",
+  "description": "Mapping and location intelligence APIs."
+ },
+ {
+  "name": "Site24x7",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Development",
+  "description": "Application and infrastructure monitoring."
+ },
+ {
+  "name": "Zoho BugTracker",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Development",
+  "description": "Bug tracking and issue management."
+ },
+ {
+  "name": "Zoho Catalyst",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Development",
+  "description": "Serverless development platform."
+ },
+ {
+  "name": "Zoho Deluge",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Free",
+  "website": "",
+  "category": "Development",
+  "description": "Scripting language for automating business processes."
+ },
+ {
+  "name": "Zoho Flow",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Development",
+  "description": "Integration platform for connecting apps."
+ },
+ {
+  "name": "Zoho Sprints",
+  "developer": "Zoho Corporation",
+  "city": "Chennai",
+  "state": "Tamil Nadu",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "Development",
+  "description": "Agile project management for scrum teams."
+ },
+ {
+  "name": "Aasaan",
+  "developer": "Lightbooks Technologies",
+  "city": "Hyderabad",
+  "state": "Telangana",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Headless commerce platform with an AI website builder."
+ },
+ {
+  "name": "BigBasket",
+  "developer": "Tata Digital",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Free",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Online grocery and food delivery."
+ },
+ {
+  "name": "Dukaan",
+  "developer": "Dukaan",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "DIY platform to create an online store."
+ },
+ {
+  "name": "IndiaMART",
+  "developer": "IndiaMART InterMESH Limited",
+  "city": "Noida",
+  "state": "Uttar Pradesh",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "B2B marketplace connecting buyers and suppliers."
+ },
+ {
+  "name": "JioMart",
+  "developer": "Reliance Industries",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Free",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Online shopping for groceries, electronics and fashion."
+ },
+ {
+  "name": "Meesho",
+  "developer": "Meesho",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Free",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Social commerce for small sellers and homepreneurs."
+ },
+ {
+  "name": "Nykaa",
+  "developer": "FSN E-Commerce Ventures",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Free",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Beauty and wellness e-commerce."
+ },
+ {
+  "name": "Pepperfry",
+  "developer": "Pepperfry",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Free",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Furniture and home products marketplace."
+ },
+ {
+  "name": "Qikink",
+  "developer": "Qikink",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Free",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Print-on-demand platform with Indian manufacturing."
+ },
+ {
+  "name": "Shiprocket",
+  "developer": "Shiprocket",
+  "city": "Gurugram",
+  "state": "Haryana",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Shipping and logistics for online sellers."
+ },
+ {
+  "name": "ShopClues",
+  "developer": "Clues Network",
+  "city": "Gurugram",
+  "state": "Haryana",
+  "pricing": "Free",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Value shopping marketplace for unbranded goods."
+ },
+ {
+  "name": "Snapdeal",
+  "developer": "Snapdeal Limited",
+  "city": "New Delhi",
+  "state": "Delhi",
+  "pricing": "Free",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Value-focused e-commerce marketplace."
+ },
+ {
+  "name": "StoreHippo",
+  "developer": "StoreHippo",
+  "city": "Gurugram",
+  "state": "Haryana",
+  "pricing": "Paid",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "E-commerce platform for B2B and B2C businesses."
+ },
+ {
+  "name": "Tata CLiQ",
+  "developer": "Tata Group",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pricing": "Free",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Premium shopping for electronics, fashion and lifestyle."
+ },
+ {
+  "name": "The CraftsVilla",
+  "developer": "Vastrvilla Creation",
+  "city": "Surat",
+  "state": "Gujarat",
+  "pricing": "Free",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "Online store for ethnic wear and sarees."
+ },
+ {
+  "name": "Typof",
+  "developer": "Typof Technologies Pvt. Ltd.",
+  "city": "Cuttack",
+  "state": "Odisha",
+  "pricing": "Freemium",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "No-code e-commerce website builder for creators."
+ },
+ {
+  "name": "Zopping",
+  "developer": "Zopping",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pricing": "Paid",
+  "website": "",
+  "category": "E-Commerce",
+  "description": "No-code e-commerce platform for Indian retailers."
+ }
+]

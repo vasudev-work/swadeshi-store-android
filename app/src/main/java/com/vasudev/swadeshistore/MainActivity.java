@@ -68,6 +68,13 @@ public class MainActivity extends Activity {
     private LinearLayout view, chipsRow, navRow, manageOverlay, manageBody, govtOverlay, loginOverlay;
     private FrameLayout rootView;
     private LinearLayout devOverlay, devBody, allOverlay, allBody, settingsOverlay, settingsBody;
+    private LinearLayout osOverlay, osBody;
+    private LinearLayout licOverlay, licBody;
+    private LinearLayout proOverlay, proBody;
+    private String platform = "all";
+    private int fontIdx = 0, textScaleIdx = 0;
+    private boolean highContrast = false;
+    private static final int REQ_IMPORT_SETTINGS = 4711;
     private TextView devTitle, allTitle;
     private String devOpen = null;
     private TextView govtTitle;
@@ -79,7 +86,7 @@ public class MainActivity extends Activity {
     private String userName = "", userEmail = "";
     private android.webkit.WebView webView;
     private TextView overviewTab, manageTab;
-    private String tab = "apps", chip = "top", query = "", category = null, mtab = "overview";
+    private String tab = "apps", chip = "top", query = "", category = null, mtab = "overview", playCat = null;
     private boolean showAll = false;
     private final android.os.Handler searchHandler =
             new android.os.Handler(android.os.Looper.getMainLooper());
@@ -92,7 +99,7 @@ public class MainActivity extends Activity {
     static final String UPI_ID = "vasudevupi@upi";
     static final String UPI_PAYEE = "Vasudev";
     private static final int TIP_MIN = 100;
-    private static final int MAX_RESULTS = 60;
+    private static final int MAX_RESULTS = 200;
     // left blank on purpose — the app is fully offline, so a tampered remote file can't
     // inject listings or URLs. Put a URL here to turn the update channel back on, but
     // check the entries (https, allowed hosts) before trusting them.
@@ -121,9 +128,13 @@ public class MainActivity extends Activity {
         prefs = getSharedPreferences("settings", MODE_PRIVATE);
         saved.addAll(prefs.getStringSet("saved", new HashSet<>()));
         userName = prefs.getString("user_name", "");
+        platform = prefs.getString("platform", "all");
         userEmail = prefs.getString("user_email", "");
         themeMode = prefs.getInt("theme", THEME_DARK);
         accentIdx = prefs.getInt("accent", 0);
+        fontIdx = prefs.getInt("font", 0);
+        textScaleIdx = prefs.getInt("text_scale", 0);
+        highContrast = prefs.getBoolean("high_contrast", false);
         applyPalette();
         repo = AppRepository.load(this);
         loadLocalAdditions();
@@ -235,9 +246,21 @@ public class MainActivity extends Activity {
     private TextView tv(String s, float sizeSp, int color) {
         TextView t = new TextView(this);
         t.setText(s);
-        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp);
+        float scale = textScaleIdx == 1 ? 1.15f : 1f;
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp * scale);
         t.setTextColor(color);
+        t.setTypeface(appTypeface());
         return t;
+    }
+
+    /** Font style chosen in settings: default, serif, condensed or monospace. */
+    private Typeface appTypeface() {
+        switch (fontIdx) {
+            case 1: return Typeface.create("serif", Typeface.NORMAL);
+            case 2: return Typeface.create("sans-serif-condensed", Typeface.NORMAL);
+            case 3: return Typeface.create("monospace", Typeface.NORMAL);
+            default: return Typeface.create("sans-serif", Typeface.NORMAL);
+        }
     }
     private TextView bold(TextView t) { t.setTypeface(t.getTypeface(), Typeface.BOLD); return t; }
     private GradientDrawable bg(int color, float radiusDp, int stroke, float strokeDp) {
@@ -329,18 +352,27 @@ public class MainActivity extends Activity {
     private boolean isDarkNow() {
         if (themeMode == THEME_LIGHT) return false;
         if (themeMode == THEME_DARK) return true;
+        if (themeMode == 3) return true;
         int m = getResources().getConfiguration().uiMode
                 & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
         return m == android.content.res.Configuration.UI_MODE_NIGHT_YES;
     }
 
     private void applyPalette() {
-        if (isDarkNow()) {
+        if (themeMode == 3) {
+            BG = 0xFF000000; SURFACE = 0xFF0A0A0A; SURFACE2 = 0xFF141414;
+            SURFACE3 = 0xFF1C1C1C; TEXT = 0xFFFFFFFF; MUTED = 0xFFC6CBD1; BORDER = 0xFF242424;
+        } else if (isDarkNow()) {
             BG = 0xFF121212; SURFACE = 0xFF1E1E1E; SURFACE2 = 0xFF2A2A2A;
             SURFACE3 = 0xFF303134; TEXT = 0xFFE8EAED; MUTED = 0xFFADB2B8; BORDER = 0xFF2C2C2C;
         } else {
             BG = 0xFFF6F7F9; SURFACE = 0xFFFFFFFF; SURFACE2 = 0xFFEFF1F4;
             SURFACE3 = 0xFFE6E8EC; TEXT = 0xFF1A1B1E; MUTED = 0xFF4A4E54; BORDER = 0xFFE1E3E7;
+        }
+        if (highContrast) {
+            TEXT = isDarkNow() || themeMode == 3 ? 0xFFFFFFFF : 0xFF000000;
+            MUTED = isDarkNow() || themeMode == 3 ? 0xFFE0E3E7 : 0xFF303338;
+            BORDER = isDarkNow() || themeMode == 3 ? 0xFF6B7076 : 0xFF8A8F96;
         }
         int a = Math.max(0, Math.min(ACCENTS.length - 1, accentIdx));
         GREEN = ACCENTS[a][0];
@@ -356,6 +388,379 @@ public class MainActivity extends Activity {
         tab = "you"; chip = "top"; category = null;
         buildUi();
         openSettings();
+    }
+
+    private String platformLabel() {
+        if ("android".equals(platform)) return "Android";
+        if ("macos".equals(platform)) return "macOS";
+        if ("windows".equals(platform)) return "Windows";
+        if ("linux".equals(platform)) return "Linux";
+        return "All platforms";
+    }
+
+    private void showOsSheet() {
+        if (osOverlay == null) return;
+        renderOsSheet();
+        osOverlay.setVisibility(View.VISIBLE);
+    }
+
+    private void renderOsSheet() {
+        if (osBody == null) return;
+        osBody.removeAllViews();
+
+        TextView head = bold(tv("Choose your OS", 20, TEXT));
+        head.setPadding(dp(4), dp(6), dp(4), dp(2));
+        osBody.addView(head);
+        TextView sub = tv("This list is Android only for now.", 12.5f, MUTED);
+        sub.setPadding(dp(4), 0, dp(4), dp(14));
+        osBody.addView(sub);
+
+        String[][] opts = {
+                {"all", "All platforms"},
+                {"android", "Android"},
+                {"macos", "macOS"},
+                {"windows", "Windows"},
+                {"linux", "Linux"}
+        };
+        for (final String[] o : opts) {
+            boolean on = o[0].equals(platform);
+            LinearLayout r = new LinearLayout(this);
+            r.setOrientation(LinearLayout.HORIZONTAL);
+            r.setGravity(Gravity.CENTER_VERTICAL);
+            r.setPadding(dp(14), dp(14), dp(14), dp(14));
+            r.setBackground(bg(on ? SURFACE2 : SURFACE, 14, on ? GREEN : BORDER, on ? 2 : 1));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(0, 0, 0, dp(8));
+            r.setLayoutParams(lp);
+            r.setContentDescription(o[1] + (on ? ", selected" : ""));
+            r.addView(bold(tv(o[1], 15, TEXT)), new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            if (on) {
+                TextView tick = bold(tv("\u2713", 17, GREEN));
+                tick.setContentDescription("Selected");
+                r.addView(tick);
+            }
+            r.setOnClickListener(v -> {
+                platform = o[0];
+                prefs.edit().putString("platform", platform).apply();
+                osOverlay.setVisibility(View.GONE);
+                render();
+            });
+            osBody.addView(r);
+        }
+    }
+
+    private void showLicenses() {
+        if (licOverlay == null) return;
+        renderLicenses();
+        licOverlay.setVisibility(View.VISIBLE);
+    }
+
+    private void renderLicenses() {
+        if (licBody == null) return;
+        licBody.removeAllViews();
+
+        TextView note = tv("This app has no third-party libraries bundled. What is listed below is what it is built on.",
+                12.5f, MUTED);
+        note.setPadding(dp(16), dp(4), dp(16), dp(10));
+        licBody.addView(note);
+
+        String[][] libs = {
+                {"Android Open Source Project", "Android platform APIs, UI toolkit and runtime. The app uses these directly, with no wrapper libraries.", "Apache 2.0", "Google"},
+                {"Gradle", "Build tool that assembles the APK. Runs at build time only and is not shipped inside the app.", "Apache 2.0", "Gradle Inc."},
+                {"JUnit 4", "Test framework for the small unit test suite. Build-time only, never shipped.", "EPL 1.0", "JUnit Team"}
+        };
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(bg(SURFACE, 16, BORDER, 1));
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        clp.setMargins(dp(14), 0, dp(14), dp(12));
+        card.setLayoutParams(clp);
+
+        for (int i = 0; i < libs.length; i++) {
+            String[] l = libs[i];
+            if (i > 0) {
+                View div = new View(this);
+                div.setBackgroundColor(BORDER);
+                LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(0.7f)));
+                dlp.leftMargin = dp(14);
+                dlp.rightMargin = dp(14);
+                card.addView(div, dlp);
+            }
+            LinearLayout col = new LinearLayout(this);
+            col.setOrientation(LinearLayout.VERTICAL);
+            col.setPadding(dp(14), dp(13), dp(14), dp(13));
+            col.setContentDescription(l[0] + ", " + l[2]);
+
+            LinearLayout top = new LinearLayout(this);
+            top.setOrientation(LinearLayout.HORIZONTAL);
+            top.setGravity(Gravity.CENTER_VERTICAL);
+            top.addView(bold(tv(l[0], 14.5f, TEXT)),
+                    new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            TextView badge = tv(l[2], 11, MUTED);
+            badge.setBackground(bg(SURFACE2, 8, 0, 0));
+            badge.setPadding(dp(8), dp(3), dp(8), dp(3));
+            top.addView(badge);
+            col.addView(top);
+
+            TextView desc = tv(l[1], 12, MUTED);
+            LinearLayout.LayoutParams dlp2 = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            dlp2.topMargin = dp(4);
+            col.addView(desc, dlp2);
+            col.addView(tv(l[3], 11, MUTED));
+            card.addView(col);
+        }
+        licBody.addView(card);
+
+        LinearLayout noteCard = new LinearLayout(this);
+        noteCard.setOrientation(LinearLayout.VERTICAL);
+        noteCard.setBackground(bg(SURFACE, 16, BORDER, 1));
+        noteCard.setPadding(dp(14), dp(13), dp(14), dp(13));
+        LinearLayout.LayoutParams nlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        nlp.setMargins(dp(14), 0, dp(14), dp(20));
+        noteCard.setLayoutParams(nlp);
+        noteCard.addView(bold(tv("App names and icons", 14, TEXT)));
+        TextView n2 = tv("App names, icons and logos shown in this app belong to their respective owners. They are used only to identify the app and are not covered by this app's licence.", 12, MUTED);
+        LinearLayout.LayoutParams n2lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        n2lp.topMargin = dp(4);
+        noteCard.addView(n2, n2lp);
+        licBody.addView(noteCard);
+    }
+
+    private void showProducts() {
+        if (proOverlay == null) return;
+        renderProducts();
+        proOverlay.setVisibility(View.VISIBLE);
+    }
+
+    private org.json.JSONArray loadProducts() {
+        try (java.io.InputStream is = getAssets().open("digital_products.json")) {
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = is.read(buf)) > 0) bos.write(buf, 0, n);
+            return new org.json.JSONArray(new String(bos.toByteArray(), "UTF-8"));
+        } catch (Throwable e) {
+            return new org.json.JSONArray();
+        }
+    }
+
+    private void renderProducts() {
+        if (proBody == null) return;
+        proBody.removeAllViews();
+
+        TextView note = tv("Indian web apps, websites and APIs. These are not Play Store apps, so they open in a browser.",
+                12.5f, MUTED);
+        note.setPadding(dp(16), dp(4), dp(16), dp(10));
+        proBody.addView(note);
+
+        org.json.JSONArray arr = loadProducts();
+        String lastCat = null;
+        for (int i = 0; i < arr.length(); i++) {
+            org.json.JSONObject o = arr.optJSONObject(i);
+            if (o == null) continue;
+            String cat = o.optString("category", "");
+            if (!cat.equals(lastCat)) {
+                TextView h = bold(tv(cat, 13, GREEN2));
+                h.setPadding(dp(16), dp(14), dp(16), dp(6));
+                proBody.addView(h);
+                lastCat = cat;
+            }
+            String name = o.optString("name", "");
+            String dev = o.optString("developer", "");
+            String city = o.optString("city", "");
+            String state = o.optString("state", "");
+            String pricing = o.optString("pricing", "");
+            String site = o.optString("website", "");
+            String desc = o.optString("description", "");
+
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setBackground(bg(SURFACE, 14, BORDER, 1));
+            card.setPadding(dp(14), dp(12), dp(14), dp(12));
+            LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            clp.setMargins(dp(14), 0, dp(14), dp(10));
+            card.setLayoutParams(clp);
+            card.setContentDescription(name + ", " + dev);
+
+            LinearLayout top = new LinearLayout(this);
+            top.setOrientation(LinearLayout.HORIZONTAL);
+            top.setGravity(Gravity.CENTER_VERTICAL);
+            top.addView(bold(tv(name, 15, TEXT)),
+                    new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            TextView badge = tv(pricing, 10.5f, MUTED);
+            badge.setBackground(bg(SURFACE2, 8, 0, 0));
+            badge.setPadding(dp(8), dp(3), dp(8), dp(3));
+            top.addView(badge);
+            card.addView(top);
+
+            String where = dev + (notEmpty(city) ? "  \u00b7  " + city + (notEmpty(state) ? ", " + state : "") : "");
+            card.addView(tv(where, 12, MUTED));
+            if (notEmpty(desc)) {
+                TextView d = tv(desc, 12, MUTED);
+                LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                dlp.topMargin = dp(5);
+                card.addView(d, dlp);
+            }
+            if (notEmpty(site)) {
+                TextView go = bold(tv("Visit website  \u203A", 12.5f, GREEN2));
+                go.setPadding(0, dp(8), 0, 0);
+                go.setContentDescription("Open website for " + name);
+                final String url = site;
+                go.setOnClickListener(v -> openUrl(url));
+                card.addView(go);
+            }
+            proBody.addView(card);
+        }
+        if (arr.length() == 0) {
+            TextView e = tv("No digital products loaded.", 14, MUTED);
+            e.setGravity(Gravity.CENTER);
+            e.setPadding(dp(20), dp(50), dp(20), dp(50));
+            proBody.addView(e);
+        }
+    }
+
+    /** A labelled on/off row. */
+    private View toggleRow(String title, String sub, boolean on, View.OnClickListener click) {
+        LinearLayout r = new LinearLayout(this);
+        r.setOrientation(LinearLayout.HORIZONTAL);
+        r.setGravity(Gravity.CENTER_VERTICAL);
+        r.setPadding(dp(14), dp(13), dp(14), dp(13));
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.addView(bold(tv(title, 15, TEXT)));
+        col.addView(tv(sub, 12, MUTED));
+        r.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        TextView sw = bold(tv(on ? "On" : "Off", 12.5f, on ? 0xFFFFFFFF : MUTED));
+        sw.setGravity(Gravity.CENTER);
+        sw.setPadding(dp(14), dp(6), dp(14), dp(6));
+        sw.setBackground(on ? bg(GREEN, 20, 0, 0) : bg(SURFACE2, 20, BORDER, 1));
+        r.addView(sw);
+        r.setContentDescription(title + ", " + (on ? "on" : "off"));
+        r.setOnClickListener(click);
+        return r;
+    }
+
+    /** Deletes this app's own cache directory. Nothing else is touched. */
+    private void clearCache() {
+        long freed = 0;
+        try {
+            java.io.File c = getCacheDir();
+            freed = dirSize(c);
+            deleteTree(c);
+            if (android.os.Build.VERSION.SDK_INT >= 21) freed += dirSize(getExternalCacheDir());
+            deleteTree(getExternalCacheDir());
+        } catch (Throwable ignored) { }
+        toast(freed > 0 ? "Cache cleared \u00b7 " + (freed / 1024) + " KB freed" : "Cache is already empty");
+    }
+
+    private long dirSize(java.io.File f) {
+        if (f == null || !f.exists()) return 0;
+        if (f.isFile()) return f.length();
+        long t = 0;
+        java.io.File[] kids = f.listFiles();
+        if (kids != null) for (java.io.File k : kids) t += dirSize(k);
+        return t;
+    }
+
+    private void deleteTree(java.io.File f) {
+        if (f == null || !f.exists()) return;
+        java.io.File[] kids = f.listFiles();
+        if (kids != null) for (java.io.File k : kids) deleteTree(k);
+        //noinspection ResultOfMethodCallIgnored
+        f.delete();
+    }
+
+    /** Writes the user's settings as JSON and opens the share sheet. */
+    private void exportSettings() {
+        try {
+            org.json.JSONObject o = new org.json.JSONObject();
+            o.put("app", "Swadeshi Appstore");
+            o.put("version", appVersion());
+            o.put("theme", themeMode);
+            o.put("accent", accentIdx);
+            o.put("font", fontIdx);
+            o.put("text_scale", textScaleIdx);
+            o.put("high_contrast", highContrast);
+            o.put("platform", platform);
+            o.put("saved_count", saved.size());
+            String json = o.toString(1);
+
+            java.io.File f = new java.io.File(getFilesDir(), "swadeshi-settings.json");
+            java.io.FileOutputStream fos = new java.io.FileOutputStream(f);
+            fos.write(json.getBytes("UTF-8"));
+            fos.close();
+
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(Intent.EXTRA_SUBJECT, "Swadeshi Appstore settings");
+            send.putExtra(Intent.EXTRA_TEXT, json);
+            startActivity(Intent.createChooser(send, "Export settings"));
+        } catch (Throwable e) {
+            toast("Could not export settings");
+        }
+    }
+
+    /** Lets the user pick a settings JSON. Size-limited and validated before applying. */
+    private void importSettings() {
+        try {
+            Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            i.addCategory(Intent.CATEGORY_OPENABLE);
+            i.setType("application/json");
+            i.putExtra("android.content.extra.SHOW_ADVANCED", true);
+            startActivityForResult(i, REQ_IMPORT_SETTINGS);
+        } catch (Throwable e) {
+            toast("No file picker available");
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        if (req != REQ_IMPORT_SETTINGS || res != RESULT_OK || data == null || data.getData() == null) return;
+        try {
+            java.io.InputStream is = getContentResolver().openInputStream(data.getData());
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+            byte[] buf = new byte[4096];
+            int n, total = 0;
+            while ((n = is.read(buf)) > 0) {
+                total += n;
+                if (total > 256 * 1024) { is.close(); toast("File too large (max 256 KB)"); return; }
+                bos.write(buf, 0, n);
+            }
+            is.close();
+            org.json.JSONObject o = new org.json.JSONObject(new String(bos.toByteArray(), "UTF-8"));
+            if (!o.has("app")) { toast("Not a Swadeshi settings file"); return; }
+            final org.json.JSONObject obj = o;
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("Apply these settings?")
+                    .setMessage("Theme, accent, font, text size and contrast will be replaced. Saved apps are not touched.")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Apply", (d, w) -> {
+                        themeMode = obj.optInt("theme", themeMode);
+                        accentIdx = obj.optInt("accent", accentIdx);
+                        fontIdx = obj.optInt("font", fontIdx);
+                        textScaleIdx = obj.optInt("text_scale", textScaleIdx);
+                        highContrast = obj.optBoolean("high_contrast", highContrast);
+                        prefs.edit().putInt("theme", themeMode).putInt("accent", accentIdx)
+                                .putInt("font", fontIdx).putInt("text_scale", textScaleIdx)
+                                .putBoolean("high_contrast", highContrast).apply();
+                        rebuildForAppearance();
+                        toast("Settings applied");
+                    })
+                    .show();
+        } catch (Throwable e) {
+            toast("Could not read that file");
+        }
     }
 
     private void openSettings() {
@@ -388,7 +793,7 @@ public class MainActivity extends Activity {
 
         LinearLayout themeRow = new LinearLayout(this);
         themeRow.setOrientation(LinearLayout.HORIZONTAL);
-        String[] themeNames = {"System", "Light", "Dark"};
+        String[] themeNames = {"System", "Light", "Dark", "Black"};
         for (int i = 0; i < themeNames.length; i++) {
             final int mode = i;
             boolean on = themeMode == mode;
@@ -449,6 +854,114 @@ public class MainActivity extends Activity {
         }
         card.addView(accentRow);
         settingsBody.addView(card);
+
+        // ---- text ----
+        settingsBody.addView(section("Text"));
+        LinearLayout textCard = new LinearLayout(this);
+        textCard.setOrientation(LinearLayout.VERTICAL);
+        textCard.setBackground(bg(SURFACE, 16, BORDER, 1));
+        textCard.setPadding(dp(14), dp(14), dp(14), dp(14));
+        LinearLayout.LayoutParams tclp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        tclp.setMargins(dp(14), dp(4), dp(14), dp(4));
+        textCard.setLayoutParams(tclp);
+
+        textCard.addView(bold(tv("Font style", 15, TEXT)));
+        LinearLayout fontRow = new LinearLayout(this);
+        fontRow.setOrientation(LinearLayout.HORIZONTAL);
+        String[] fontNames = {"Default", "Serif", "Condensed", "Mono"};
+        for (int i = 0; i < fontNames.length; i++) {
+            final int fi = i;
+            boolean on = fontIdx == fi;
+            TextView chip = bold(tv(fontNames[fi], 12.5f, on ? 0xFFFFFFFF : TEXT));
+            chip.setGravity(Gravity.CENTER);
+            chip.setSingleLine(true);
+            chip.setPadding(dp(6), dp(9), dp(6), dp(9));
+            chip.setBackground(on ? bg(GREEN, 12, GREEN, 1) : bg(SURFACE2, 12, BORDER, 1));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            if (i < fontNames.length - 1) lp.rightMargin = dp(7);
+            chip.setLayoutParams(lp);
+            chip.setContentDescription(fontNames[fi] + " font");
+            chip.setOnClickListener(v -> {
+                if (fontIdx != fi) {
+                    fontIdx = fi;
+                    prefs.edit().putInt("font", fi).apply();
+                    rebuildForAppearance();
+                }
+            });
+            fontRow.addView(chip);
+        }
+        LinearLayout.LayoutParams frlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        frlp.topMargin = dp(10);
+        textCard.addView(fontRow, frlp);
+
+        TextView sizeLbl = bold(tv("Text size", 15, TEXT));
+        LinearLayout.LayoutParams slp2 = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        slp2.topMargin = dp(16);
+        textCard.addView(sizeLbl, slp2);
+        LinearLayout sizeRow = new LinearLayout(this);
+        sizeRow.setOrientation(LinearLayout.HORIZONTAL);
+        String[] sizeNames = {"Normal", "Large"};
+        for (int i = 0; i < sizeNames.length; i++) {
+            final int si = i;
+            boolean on = textScaleIdx == si;
+            TextView chip = bold(tv(sizeNames[si], 12.5f, on ? 0xFFFFFFFF : TEXT));
+            chip.setGravity(Gravity.CENTER);
+            chip.setPadding(dp(6), dp(9), dp(6), dp(9));
+            chip.setBackground(on ? bg(GREEN, 12, GREEN, 1) : bg(SURFACE2, 12, BORDER, 1));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            if (i < sizeNames.length - 1) lp.rightMargin = dp(7);
+            chip.setLayoutParams(lp);
+            chip.setContentDescription(sizeNames[si] + " text size");
+            chip.setOnClickListener(v -> {
+                if (textScaleIdx != si) {
+                    textScaleIdx = si;
+                    prefs.edit().putInt("text_scale", si).apply();
+                    rebuildForAppearance();
+                }
+            });
+            sizeRow.addView(chip);
+        }
+        LinearLayout.LayoutParams srlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        srlp.topMargin = dp(10);
+        textCard.addView(sizeRow, srlp);
+        settingsBody.addView(textCard);
+
+        // ---- accessibility ----
+        settingsBody.addView(section("Accessibility"));
+        LinearLayout accCard = new LinearLayout(this);
+        accCard.setOrientation(LinearLayout.VERTICAL);
+        accCard.setBackground(bg(SURFACE, 16, BORDER, 1));
+        LinearLayout.LayoutParams aclp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        aclp.setMargins(dp(14), dp(4), dp(14), dp(4));
+        accCard.setLayoutParams(aclp);
+        accCard.addView(toggleRow("High contrast", "Stronger text and border colours", highContrast, v -> {
+            highContrast = !highContrast;
+            prefs.edit().putBoolean("high_contrast", highContrast).apply();
+            rebuildForAppearance();
+        }));
+        settingsBody.addView(accCard);
+
+        // ---- data ----
+        settingsBody.addView(section("Data"));
+        LinearLayout dataCard = new LinearLayout(this);
+        dataCard.setOrientation(LinearLayout.VERTICAL);
+        dataCard.setBackground(bg(SURFACE, 16, BORDER, 1));
+        LinearLayout.LayoutParams dclp2 = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        dclp2.setMargins(dp(14), dp(4), dp(14), dp(4));
+        dataCard.setLayoutParams(dclp2);
+        dataCard.addView(tile(R.drawable.ic_storage, "Clear cache"));
+        dataCard.getChildAt(dataCard.getChildCount() - 1).setOnClickListener(v -> clearCache());
+        dataCard.addView(tile(R.drawable.ic_sync, "Export settings"));
+        dataCard.getChildAt(dataCard.getChildCount() - 1).setOnClickListener(v -> exportSettings());
+        dataCard.addView(tile(R.drawable.ic_update, "Import settings"));
+        dataCard.getChildAt(dataCard.getChildCount() - 1).setOnClickListener(v -> importSettings());
+        settingsBody.addView(dataCard);
 
         // developer
         settingsBody.addView(section("Developer"));
@@ -530,6 +1043,20 @@ public class MainActivity extends Activity {
         bar.setPadding(dp(12), dp(12), dp(8), dp(2));
         TextView title = bold(tv("Swadeshi Appstore", 20, TEXT));
         bar.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        LinearLayout osPill = new LinearLayout(this);
+        osPill.setOrientation(LinearLayout.HORIZONTAL);
+        osPill.setGravity(Gravity.CENTER_VERTICAL);
+        osPill.setBackground(bg(SURFACE2, 14, BORDER, 1));
+        osPill.setPadding(dp(11), dp(6), dp(9), dp(6));
+        osPill.setContentDescription("Choose your OS");
+        osPill.addView(bold(tv(platformLabel(), 12, TEXT)));
+        osPill.addView(tv(" \u25BE", 12, MUTED));
+        LinearLayout.LayoutParams oslp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        oslp.rightMargin = dp(6);
+        osPill.setOnClickListener(v -> showOsSheet());
+        bar.addView(osPill, oslp);
 
         FrameLayout bellBox = new FrameLayout(this);
         ImageView bell = new ImageView(this);
@@ -771,6 +1298,24 @@ public class MainActivity extends Activity {
         root.addView(settingsOverlay, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+        made = makePage("Choose your OS");
+        osOverlay = made[0];
+        osBody = made[1];
+        root.addView(osOverlay, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        made = makePage("Open Source Licenses");
+        licOverlay = made[0];
+        licBody = made[1];
+        root.addView(licOverlay, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        made = makePage("Digital products");
+        proOverlay = made[0];
+        proBody = made[1];
+        root.addView(proOverlay, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
         setContentView(root);
         render();
         if (userName == null || userName.isEmpty()) loginOverlay.setVisibility(View.VISIBLE);
@@ -794,7 +1339,7 @@ public class MainActivity extends Activity {
         lp.topMargin = dp(3);
         it.addView(t, lp);
         it.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        it.setOnClickListener(v -> { tab = key; chip = "top"; category = null; showAll = false; render(); });
+        it.setOnClickListener(v -> { tab = key; chip = "top"; category = null; playCat = null; showAll = false; render(); });
         return it;
     }
     private void renderNav() {
@@ -821,7 +1366,7 @@ public class MainActivity extends Activity {
             lp.rightMargin = dp(8);
             c.setLayoutParams(lp);
             final String key = d[0];
-            c.setOnClickListener(v -> { chip = key; category = null; showAll = false; render(); });
+            c.setOnClickListener(v -> { chip = key; category = null; playCat = null; showAll = false; render(); });
             chipsRow.addView(c);
         }
     }
@@ -870,40 +1415,69 @@ public class MainActivity extends Activity {
         for (AppItem a : repo.apps) if (a.category.equals(c)) out.add(a);
         return out;
     }
+
+    private static final String[] PLAY_CATS = {"Android Auto","Art & Design","Auto & Vehicles","Beauty",
+        "Books & Reference","Business","Comics","Communication","Dating","Education","Entertainment","Events",
+        "Finance","Food & Drink","Games","Health & Fitness","House & Home","Libraries & Demo","Lifestyle",
+        "Maps & Navigation","Medical","Music & Audio","News & Magazines","Parenting","Personalisation",
+        "Photography","Productivity","Shopping","Social","Sports","Tools","Travel & Local",
+        "Video Players & Editors","Watch apps","Watch faces","Weather"};
+
+    /** Apps whose standard Google Play category matches. */
+    private List<AppItem> byPlayCat(String c) {
+        List<AppItem> out = new ArrayList<>();
+        for (AppItem a : repo.apps) {
+            if (a.subcategory != null && a.subcategory.equals(c)) out.add(a);
+        }
+        return out;
+    }
     private AppItem find(String id) {
         for (AppItem a : repo.apps) if (a.id.equals(id)) return a;
         return null;
     }
 
     // ---- Swadeshi alternative recommendation ----
+    // match, foreign app, primary Indian alternative, other alternatives, category, note
     private static final String[][] ALTS = {
-        {"whatsapp|telegram|signal|messenger|wechat", "WhatsApp / Telegram", "Arattai", "JioChat|JioSafe|Sandes (GIMS)|Elyments|TroopMessenger|JioMessages"},
-        {"truecaller|caller id|dialer", "Truecaller", "BharatCaller", "Naam|JioCall"},
-        {"mx player|vlc|video player", "MX Player", "Next Player", "", "MX Player ab Amazon ka hai."},
-        {"google pay|gpay|paypal|venmo|wallet", "Google Pay / Wallet", "BHIM (NPCI)", "Paytm|CRED", "PhonePe ab Walmart ka hai."},
-        {"gmail|outlook|yahoo mail|email", "Gmail", "Zoho Mail", "Rediffmail|Titan Mail|DataMail|NICEmail / Sandes"},
-        {"chrome|goog|browser|edge|firefox|opera", "Chrome / Google", "Ulaa Browser", "JioSphere|Epic Browser|Qmamu|Aekant"},
-        {"google maps|maps|navigation|waze", "Google Maps", "Mappls (MapmyIndia)", "Ola Maps"},
-        {"instagram|insta|facebook|fb|tiktok|snapchat|reels|threads", "Instagram / Facebook", "ShareChat", "Moj|Josh|Chingari|Roposo"},
-        {"youtube|yt", "YouTube", "AllVideo", "ApnaTube|Rangila Tube|The World Premium|JioCinema|Stage"},
-        {"netflix|prime video|disney|hotstar|ott", "Netflix / Prime Video", "JioCinema", "ZEE5|Aha|hoichoi|Stage"},
-        {"spotify|apple music|soundcloud", "Spotify", "JioSaavn", "KukuFM|Gaana", "Wynk Music aur Hungama Music band ho chuke hain."},
-        {"amazon|ebay|aliexpress|temu|shein", "Amazon", "Flipkart", "Myntra|Meesho|JioMart|IndiaMART"},
-        {"ubereats|doordash|grubhub|foodpanda|deliveroo", "Uber Eats / DoorDash", "Swiggy", "Zomato|magicpin"},
-        {"uber|lyft|cab|taxi", "Uber", "Ola", "Rapido|Namma Yatri|RedBus|MakeMyTrip"},
-        {"google news|flipboard|news app", "Google News", "Dailyhunt", "Inshorts|Public App"},
-        {"shareit|dropbox|onedrive|wetransfer|file share", "SHAREit / Dropbox", "ShareALL", "DigiBox|JioCloud"},
-        {"camscanner|document scanner|scanner", "CamScanner", "Kaagaz", ""},
-        {"microsoft office|ms office|google docs|excel|powerpoint|word|notion", "MS Office / Google Docs", "Zoho Writer", "Zoho Sheet|Zoho Show|Zoho WorkDrive|Zoho Notebook"},
-        {"zoom|google meet|webex|teams|skype", "Zoom / Google Meet", "JioMeet", "Zoho Meeting"},
-        {"play store|app store|google play", "Play Store", "Indus Appstore", "Gov.in Appstore"},
-        {"chatgpt|gemini|copilot|claude|bard", "ChatGPT", "Krutrim", "Puch AI"},
-        {"pubg|call of duty|free fire|fortnite|clash of clans|bgmi", "PUBG / Call of Duty", "FAU-G: Domination", "Loco|Rooter"},
-        {"myfitnesspal|strava|fitbit|fitness", "MyFitnessPal", "HealthifyMe", "August AI", "August AI doctor ka replacement nahi hai."},
-        {"google search|bing|duckduckgo|search engine", "Google Search", "Qmamu", "Ulaa Browser", "Filhaal koi Indian search engine Google jaisi quality nahi deta."},
-        {"vpn|nordvpn|expressvpn|surfshark", "NordVPN / ExpressVPN", "JioSphere VPN", "Aekant No-log VPN", "Anjaan 'Indian VPN' apps install na karein."},
-        {"slack|discord|trello|asana", "Slack / Discord", "Zoho Cliq", "Zoho Connect"},
-        {"twitter|tweet|x.com", "Twitter / X", "ShareChat", "Moj", "Koo band ho chuka hai."}
+        {"whatsapp|telegram|signal|messenger|wechat", "WhatsApp / Telegram", "Arattai", "JioChat|JioSafe|Sandes|Elyments|Troop Messenger|JioMessages", "Messaging & Calls", ""},
+        {"google messages|samsung messages|sms|texting", "Google Messages", "JioMessages", "JioChat|Sandes|Elyments", "Messaging & Calls", ""},
+        {"truecaller|caller id|callerid", "Truecaller", "InTouch Contacts & Caller ID", "ZDialer by Zoho Voice|Jolt", "Messaging & Calls", ""},
+        {"google phone|samsung phone|phone app", "Google Phone", "ZDialer by Zoho Voice", "JioCX EasyPhone|Jolt", "Messaging & Calls", ""},
+        {"google contacts|samsung contacts", "Google Contacts", "InTouch Contacts & Caller ID", "Fossify Contacts", "Messaging & Calls", ""},
+        {"mx player|vlc|just player|nova video player", "MX Player / VLC", "Next Player", "Vidsafe Player", "Media & Players", "MX Player ab Amazon ka hai."},
+        {"poweramp|musicolet|aimp|offline music player", "Offline Music Player", "Music Player - Audify Player", "Fossify Music Player", "Media & Players", ""},
+        {"spotify|apple music|soundcloud|youtube music", "Spotify", "JioSaavn", "Gaana|Kuku FM", "Media & Players", "Wynk Music aur Hungama Music band ho chuke hain."},
+        {"youtube|yt", "YouTube", "AllVideo", "ApnaTube|The World Premium|JioCinema|Stage", "Media & Players", ""},
+        {"netflix|prime video|disney|hotstar|ott", "Netflix / Prime Video", "JioCinema", "ZEE5|Aha|hoichoi|Stage", "Media & Players", ""},
+        {"google photos|simple gallery|aves gallery|photo gallery", "Google Photos", "JioPhotos", "Fossify Gallery", "Photos & Camera", ""},
+        {"open camera|stock camera|system camera|camera app", "Camera", "DualShot: Reels Camera", "GPS Camera - GeoTag Map Stamp", "Photos & Camera", ""},
+        {"google clock|samsung clock|sleep as android|alarmy|alarm clock", "Google Clock / Alarm", "Alarm & Reminder - Sleep Clock", "Clock Master - Custom Clock", "Tools & Utilities", ""},
+        {"google calculator|samsung calculator|realcalc|calculator", "Google Calculator", "Kirana Calculator", "Calculator E Plus|RCM MS Calculator", "Tools & Utilities", ""},
+        {"gboard|google keyboard|swiftkey|keyboard", "Gboard / SwiftKey", "Bobble AI Keyboard Font,Status", "Anuvadini Connect", "Tools & Utilities", ""},
+        {"files by google|google files|solid explorer|cx file explorer|file manager", "Files by Google", "File Manager - Zordo Files", "Fossify File Manager|MagTapp", "Tools & Utilities", ""},
+        {"shareit|dropbox|onedrive|wetransfer|file share", "SHAREit / Dropbox", "ShareAll", "JioCloud|DigiBox", "Tools & Utilities", ""},
+        {"camscanner|document scanner|scanner", "CamScanner", "Kaagaz Scanner", "PDF Scanner & Editor by Kaagaz", "Tools & Utilities", ""},
+        {"vpn|nordvpn|expressvpn|surfshark", "NordVPN / ExpressVPN", "JioSphere VPN", "Aekant No-log VPN", "Tools & Utilities", "Anjaan 'Indian VPN' apps install na karein."},
+        {"google calendar|samsung calendar|proton calendar|calendar app", "Google Calendar", "Zoho Calendar", "Fossify Calendar|Sri Panchang", "Productivity", ""},
+        {"google keep|microsoft to do|samsung notes|notes|to-do list", "Google Keep / MS To Do", "Zoho Notebook", "Zoho ToDo|AI Notes", "Productivity", ""},
+        {"gmail|outlook|yahoo mail|email", "Gmail", "Zoho Mail", "Rediffmail|Titan Mail|DataMail", "Productivity", ""},
+        {"microsoft office|ms office|google docs|excel|powerpoint|word|notion", "MS Office / Google Docs", "Zoho Writer", "Zoho Sheet|Zoho Show|Zoho WorkDrive|Zoho Notebook", "Productivity", ""},
+        {"zoom|google meet|webex|teams|skype", "Zoom / Google Meet", "JioMeet", "Zoho Meeting", "Productivity", ""},
+        {"slack|discord|trello|asana", "Slack / Discord", "Zoho Cliq", "Zoho Connect", "Productivity", ""},
+        {"chrome|goog|browser|edge|firefox|opera|samsung internet", "Chrome / Firefox", "Ulaa Browser", "JioSphere|Epic Browser|Qmamu|Netos Browser", "Web & Search", ""},
+        {"google search|bing|duckduckgo|search engine", "Google Search", "Qmamu", "Ulaa Browser", "Web & Search", "Filhaal koi Indian search engine Google jaisi quality nahi deta."},
+        {"chatgpt|gemini|copilot|claude|bard", "ChatGPT", "Krutrim", "Puch AI", "Web & Search", ""},
+        {"google maps|maps|navigation|waze", "Google Maps", "Mappls (MapmyIndia)", "Ola Maps", "Travel & Food", ""},
+        {"uber|lyft|cab|taxi", "Uber", "Ola", "Rapido|Namma Yatri|RedBus|MakeMyTrip", "Travel & Food", ""},
+        {"ubereats|doordash|grubhub|foodpanda|deliveroo", "Uber Eats / DoorDash", "Swiggy", "Zomato|magicpin", "Travel & Food", ""},
+        {"google pay|gpay|paypal|venmo|wallet", "Google Pay / Wallet", "BHIM (NPCI)", "Paytm|CRED", "Payments & Finance", "PhonePe ab Walmart ka hai."},
+        {"amazon|ebay|aliexpress|temu|shein", "Amazon", "Flipkart", "Myntra|Meesho|JioMart|IndiaMART", "Shopping", ""},
+        {"instagram|insta|facebook|fb|tiktok|snapchat|reels|threads", "Instagram / Facebook", "ShareChat", "Moj|Josh|Chingari|Roposo", "Social", ""},
+        {"twitter|tweet|x.com", "Twitter / X", "ShareChat", "Moj", "Social", "Koo band ho chuka hai."},
+        {"google news|flipboard|news app", "Google News", "Dailyhunt", "Inshorts|Public App", "News & Content", ""},
+        {"play store|app store|google play", "Play Store", "Indus Appstore", "Gov.in Appstore", "Apps & Stores", ""},
+        {"myfitnesspal|strava|fitbit|fitness", "MyFitnessPal", "HealthifyMe", "August AI", "Health", "August AI doctor ka replacement nahi hai."},
+        {"pubg|call of duty|free fire|fortnite|clash of clans|bgmi", "PUBG / Call of Duty", "FAU-G: Domination", "Loco|Rooter", "Games", ""}
     };
 
     /** Reads the installed apps and reports which of them have a Made-in-India alternative. */
@@ -1346,29 +1920,56 @@ public class MainActivity extends Activity {
         r.addView(sb);
         return r;
     }
+    /** Loose name lookup so an alternative can show its real logo. */
+    private AppItem findByLabel(String label) {
+        if (label == null || label.isEmpty()) return null;
+        String k = label.toLowerCase().replaceAll("[^a-z0-9]+", "");
+        if (k.isEmpty()) return null;
+        for (AppItem a : repo.apps) {
+            String n = a.name.toLowerCase().replaceAll("[^a-z0-9]+", "");
+            if (n.equals(k) || n.startsWith(k) || k.startsWith(n)) return a;
+        }
+        return null;
+    }
+
     private void renderAlternatives() {
         view.addView(section("Swadeshi alternatives"));
-        TextView note = tv("Global apps and their Made-in-India replacements. Tap one to see the alternatives.", 13, MUTED);
+        TextView note = tv("Global apps, and the Made-in-India replacements for them. Tap a row to search.",
+                13, MUTED);
         note.setPadding(dp(16), 0, dp(16), dp(10));
         view.addView(note);
+        String lastCat = null;
         for (String[] e : ALTS) {
+            String cat = e.length > 4 ? e[4] : "";
+            if (!cat.equals(lastCat)) {
+                TextView h = bold(tv(cat, 12.5f, GREEN));
+                h.setPadding(dp(16), dp(16), dp(16), dp(4));
+                view.addView(h);
+                lastCat = cat;
+            }
             LinearLayout r = new LinearLayout(this);
             r.setOrientation(LinearLayout.HORIZONTAL);
             r.setGravity(Gravity.CENTER_VERTICAL);
-            r.setPadding(dp(16), dp(12), dp(16), dp(12));
-            ImageView ic = new ImageView(this);
-            ic.setImageResource(R.drawable.ic_alternatives);
-            ic.setColorFilter(MUTED);
-            LinearLayout ib = new LinearLayout(this);
-            ib.setGravity(Gravity.CENTER);
-            ib.setBackground(bg(SURFACE2, 12, 0, 0));
-            ib.addView(ic, new LinearLayout.LayoutParams(dp(20), dp(20)));
-            r.addView(ib, new LinearLayout.LayoutParams(dp(46), dp(46)));
+            r.setPadding(dp(16), dp(10), dp(16), dp(10));
+            AppItem alt = findByLabel(e[2]);
+            if (alt != null) {
+                r.addView(iconView(alt, 46), new LinearLayout.LayoutParams(dp(46), dp(46)));
+            } else {
+                ImageView ic = new ImageView(this);
+                ic.setImageResource(R.drawable.ic_alternatives);
+                ic.setColorFilter(MUTED);
+                LinearLayout ib = new LinearLayout(this);
+                ib.setGravity(Gravity.CENTER);
+                ib.setBackground(bg(SURFACE2, 12, 0, 0));
+                ib.addView(ic, new LinearLayout.LayoutParams(dp(20), dp(20)));
+                r.addView(ib, new LinearLayout.LayoutParams(dp(46), dp(46)));
+            }
             LinearLayout col = new LinearLayout(this);
             col.setOrientation(LinearLayout.VERTICAL);
-            col.addView(bold(tv(e[1], 14.5f, TEXT)));
-            String others = e[3].isEmpty() ? "" : " \u00b7 " + e[3].replace("|", " \u00b7 ");
-            col.addView(tv(e[2] + others, 12, MUTED));
+            col.addView(bold(tv(e[2], 14, GREEN)));
+            String others = e[3].isEmpty() ? "" : "   " + e[3].replace("|", "   ");
+            col.addView(tv("instead of " + e[1] + others, 12, MUTED));
+            if (e.length > 5 && !e[5].isEmpty()) col.addView(tv(e[5], 11, MUTED));
             LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
             clp.leftMargin = dp(12);
             r.addView(col, clp);
@@ -2051,7 +2652,38 @@ public class MainActivity extends Activity {
 
     private void renderApps() {
         if ("categories".equals(chip)) { renderCategories(); return; }
+        if (!"all".equals(platform) && !"android".equals(platform)) {
+            TextView only = tv("This list has Android apps only. Switch back to Android or All platforms to browse.",
+                    14, MUTED);
+            only.setGravity(Gravity.CENTER);
+            only.setPadding(dp(24), dp(70), dp(24), dp(20));
+            view.addView(only);
+            TextView back = bold(tv("Choose your OS", 14, GREEN2));
+            back.setGravity(Gravity.CENTER);
+            back.setPadding(dp(24), dp(6), dp(24), dp(40));
+            back.setOnClickListener(v -> showOsSheet());
+            view.addView(back);
+            return;
+        }
         if ("alternatives".equals(chip)) { renderAlternatives(); return; }
+        if (playCat != null) {
+            TextView back = bold(tv("\u2039  All categories", 13, GREEN2));
+            back.setPadding(dp(16), dp(10), dp(16), dp(10));
+            back.setContentDescription("Back to all categories");
+            back.setOnClickListener(v -> { playCat = null; chip = "categories"; showAll = false; render(); });
+            view.addView(back);
+            List<AppItem> pl = byPlayCat(playCat);
+            view.addView(section(playCat + "  (" + pl.size() + ")"));
+            if (pl.isEmpty()) {
+                TextView e = tv("No apps in this category yet.", 14, MUTED);
+                e.setGravity(Gravity.CENTER);
+                e.setPadding(dp(20), dp(50), dp(20), dp(50));
+                view.addView(e);
+            } else {
+                addRows(pl);
+            }
+            return;
+        }
         List<AppItem> list;
         if ("govt".equals(chip)) list = byCat("Government, e-Governance & Citizen Services");
         else if ("fintech".equals(chip)) list = byCat("Fintech, Payments & Banking");
@@ -2189,30 +2821,182 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** One tile in the category grid: rounded count square with the label under it. */
+    private View categoryTile(final String name, final int count, int color, final Runnable onClick) {
+        LinearLayout t = new LinearLayout(this);
+        t.setOrientation(LinearLayout.VERTICAL);
+        t.setGravity(Gravity.CENTER_HORIZONTAL);
+        t.setPadding(dp(4), dp(10), dp(4), dp(10));
+        TextView ic = bold(tv(String.valueOf(count), 15, 0xFFFFFFFF));
+        ic.setGravity(Gravity.CENTER);
+        ic.setBackground(bg(color, 16, 0, 0));
+        t.addView(ic, new LinearLayout.LayoutParams(dp(56), dp(56)));
+        TextView lbl = tv(name, 11.5f, TEXT);
+        lbl.setGravity(Gravity.CENTER);
+        lbl.setMaxLines(2);
+        lbl.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        llp.topMargin = dp(6);
+        t.addView(lbl, llp);
+        t.setContentDescription(name + ", " + count + " apps");
+        t.setOnClickListener(v -> onClick.run());
+        return t;
+    }
+
+    /** Lays tiles out three per row, like the category grid. */
+    private void addTileGrid(java.util.List<View> tiles) {
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setPadding(dp(10), 0, dp(10), dp(8));
+        LinearLayout line = null;
+        for (int i = 0; i < tiles.size(); i++) {
+            if (i % 3 == 0) {
+                line = new LinearLayout(this);
+                line.setOrientation(LinearLayout.HORIZONTAL);
+                grid.addView(line);
+            }
+            line.addView(tiles.get(i), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        }
+        int rest = tiles.size() % 3;
+        if (line != null && rest != 0) {
+            for (int k = rest; k < 3; k++) {
+                line.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+            }
+        }
+        view.addView(grid);
+    }
+
+    /** Picks a drawable for a category name. Every category gets an icon. */
+    private int catIcon(String c) {
+        String n = c == null ? "" : c.toLowerCase();
+        if (n.contains("game")) return R.drawable.ic_games;
+        if (n.contains("government") || n.contains("e-governance")) return R.drawable.ic_govt;
+        if (n.contains("fintech") || n.contains("payment") || n.contains("bank")) return R.drawable.ic_cat_wallet;
+        if (n.contains("finance") || n.contains("tax")) return R.drawable.ic_cat_finance;
+        if (n.contains("health") || n.contains("medical") || n.contains("fitness") || n.contains("beauty") || n.contains("dating") || n.contains("parenting") || n.contains("sport") || n.contains("pharmacy")) return R.drawable.ic_cat_health;
+        if (n.contains("commerce") || n.contains("retail") || n.contains("shopping") || n.contains("house")) return R.drawable.ic_cat_cart;
+        if (n.contains("food") || n.contains("restaurant") || n.contains("drink")) return R.drawable.ic_cat_food;
+        if (n.contains("travel") || n.contains("mobility") || n.contains("commute") || n.contains("maps") || n.contains("navigation") || n.contains("auto") || n.contains("vehicle")) return R.drawable.ic_cat_travel;
+        if (n.contains("social") || n.contains("messag") || n.contains("network") || n.contains("communication")) return R.drawable.ic_cat_chat;
+        if (n.contains("media") || n.contains("stream") || n.contains("audio") || n.contains("video") || n.contains("entertainment") || n.contains("personalisation")) return R.drawable.ic_cat_play;
+        if (n.contains("music")) return R.drawable.ic_cat_music;
+        if (n.contains("news") || n.contains("magazine")) return R.drawable.ic_cat_news;
+        if (n.contains("weather")) return R.drawable.ic_cat_weather;
+        if (n.contains("photo") || n.contains("art") || n.contains("design") || n.contains("camera")) return R.drawable.ic_cat_camera;
+        if (n.contains("edtech") || n.contains("education") || n.contains("learning") || n.contains("books") || n.contains("comics")) return R.drawable.ic_cat_edu;
+        if (n.contains("alternative")) return R.drawable.ic_alternatives;
+        if (n.contains("store") || n.contains("platform")) return R.drawable.ic_cat_store;
+        if (n.contains("tool") || n.contains("librar") || n.contains("demo")) return R.drawable.ic_cat_tool;
+        if (n.contains("office") || n.contains("productiv") || n.contains("business") || n.contains("zoho")) return R.drawable.ic_cat_work;
+        if (n.contains("watch")) return R.drawable.ic_sync;
+        return R.drawable.ic_apps;
+    }
+
+    /** One tile in the category grid: tinted icon square with the label under it. */
+    private View catTile(final String name, final int count, int color, final Runnable onClick) {
+        LinearLayout t = new LinearLayout(this);
+        t.setOrientation(LinearLayout.VERTICAL);
+        t.setGravity(Gravity.CENTER_HORIZONTAL);
+        t.setPadding(dp(3), dp(9), dp(3), dp(9));
+
+        LinearLayout box = new LinearLayout(this);
+        box.setGravity(Gravity.CENTER);
+        box.setBackground(bg((color & 0x00FFFFFF) | 0x33000000, 16, 0, 0));
+        ImageView iv = new ImageView(this);
+        iv.setImageResource(catIcon(name));
+        iv.setColorFilter(color);
+        box.addView(iv, new LinearLayout.LayoutParams(dp(26), dp(26)));
+        t.addView(box, new LinearLayout.LayoutParams(dp(58), dp(58)));
+
+        TextView lbl = tv(name, 11, TEXT);
+        lbl.setGravity(Gravity.CENTER);
+        lbl.setMaxLines(2);
+        lbl.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        llp.topMargin = dp(6);
+        t.addView(lbl, llp);
+
+        t.setContentDescription(name + ", " + count + " apps");
+        t.setOnClickListener(v -> onClick.run());
+        return t;
+    }
+
+    /** Lays tiles out three per row, like the category grid. */
+    private void addCatGrid(java.util.List<View> tiles) {
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setPadding(dp(10), 0, dp(10), dp(8));
+        LinearLayout line = null;
+        for (int i = 0; i < tiles.size(); i++) {
+            if (i % 3 == 0) {
+                line = new LinearLayout(this);
+                line.setOrientation(LinearLayout.HORIZONTAL);
+                grid.addView(line);
+            }
+            line.addView(tiles.get(i), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        }
+        int rest = tiles.size() % 3;
+        if (line != null && rest != 0) {
+            for (int k = rest; k < 3; k++) line.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+        }
+        view.addView(grid);
+    }
+
     private void renderCategories() {
-        view.addView(section("Categories"));
-        for (String c : repo.categories) {
+        LinearLayout hdr = new LinearLayout(this);
+        hdr.setOrientation(LinearLayout.HORIZONTAL);
+        hdr.setGravity(Gravity.CENTER_VERTICAL);
+        hdr.setPadding(dp(10), dp(10), dp(10), dp(4));
+        TextView back = bold(tv("\u2039", 26, TEXT));
+        back.setGravity(Gravity.CENTER);
+        back.setContentDescription("Back");
+        back.setOnClickListener(v -> { chip = "top"; category = null; playCat = null; showAll = false; render(); });
+        hdr.addView(back, new LinearLayout.LayoutParams(dp(36), dp(36)));
+        hdr.addView(bold(tv("All Categories", 20, TEXT)),
+                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        ImageView si = new ImageView(this);
+        si.setImageResource(R.drawable.ic_search);
+        si.setColorFilter(TEXT);
+        LinearLayout sb = new LinearLayout(this);
+        sb.setGravity(Gravity.CENTER);
+        sb.addView(si, new LinearLayout.LayoutParams(dp(22), dp(22)));
+        sb.setContentDescription("Search apps");
+        sb.setOnClickListener(v -> { tab = "search"; chip = "top"; category = null; playCat = null; render(); });
+        hdr.addView(sb, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        view.addView(hdr);
+
+        java.util.List<View> tiles = new ArrayList<>();
+        for (final String c : repo.categories) {
             if ("All".equals(c)) continue;
-            LinearLayout r = new LinearLayout(this);
-            r.setOrientation(LinearLayout.HORIZONTAL);
-            r.setGravity(Gravity.CENTER_VERTICAL);
-            r.setPadding(dp(16), dp(12), dp(16), dp(12));
-            List<AppItem> inCat = byCat(c);
-            TextView dot = bold(tv(String.valueOf(inCat.size()), 13, 0xFFFFFFFF));
-            dot.setGravity(Gravity.CENTER);
-            dot.setBackground(bg(inCat.isEmpty() ? SURFACE2 : appColor(inCat.get(0)), 10, 0, 0));
-            r.addView(dot, new LinearLayout.LayoutParams(dp(36), dp(36)));
-            LinearLayout col = new LinearLayout(this);
-            col.setOrientation(LinearLayout.VERTICAL);
-            col.addView(bold(tv(c, 14, TEXT)));
-            col.addView(tv(inCat.size() + " apps", 12, MUTED));
-            LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-            clp.leftMargin = dp(12);
-            r.addView(col, clp);
-            r.addView(tv("\u203A", 20, MUTED));
-            final String cat = c;
-            r.setOnClickListener(v -> { category = cat; chip = "top"; showAll = false; render(); });
-            view.addView(r);
+            java.util.List<AppItem> inCat = byCat(c);
+            int color = inCat.isEmpty() ? MUTED : appColor(inCat.get(0));
+            tiles.add(catTile(c, inCat.size(), color, () -> {
+                category = c; playCat = null; chip = "top"; showAll = false; render();
+            }));
+        }
+        addCatGrid(tiles);
+
+        java.util.LinkedHashMap<String, Integer> pc = new java.util.LinkedHashMap<>();
+        for (AppItem a : repo.apps) {
+            String sc = a.subcategory == null ? "" : a.subcategory;
+            if (sc.isEmpty() || sc.equals(a.category)) continue;
+            if (!java.util.Arrays.asList(PLAY_CATS).contains(sc)) continue;
+            Integer v = pc.get(sc);
+            pc.put(sc, v == null ? 1 : v + 1);
+        }
+        if (!pc.isEmpty()) {
+            TextView pl = bold(tv("Play categories", 15, TEXT));
+            pl.setPadding(dp(16), dp(16), dp(16), dp(6));
+            view.addView(pl);
+            java.util.List<View> pt = new ArrayList<>();
+            for (final java.util.Map.Entry<String, Integer> en : pc.entrySet()) {
+                pt.add(catTile(en.getKey(), en.getValue(), GREEN, () -> {
+                    playCat = en.getKey(); category = null; chip = "top"; showAll = false; render();
+                }));
+            }
+            addCatGrid(pt);
         }
     }
 
@@ -2455,6 +3239,37 @@ public class MainActivity extends Activity {
         view.addView(wrap);
         drawResults();
     }
+    /**
+     * Relevance score for a search. Higher is better, 0 means no match.
+     * When allWords is true every word must appear somewhere; otherwise any word is enough.
+     */
+    private int matchScore(AppItem a, String[] words, boolean allWords) {
+        String name = a.name == null ? "" : a.name.toLowerCase();
+        String dev = a.developer == null ? "" : a.developer.toLowerCase();
+        String cat = a.category == null ? "" : a.category.toLowerCase();
+        String sub = a.subcategory == null ? "" : a.subcategory.toLowerCase();
+        String pkg = a.pkg == null ? "" : a.pkg.toLowerCase();
+        String tags = a.tags == null ? "" : a.tags.toString().toLowerCase();
+        String hay = name + " " + dev + " " + cat + " " + sub + " " + tags + " " + pkg;
+        int score = 0, hits = 0;
+        for (String w : words) {
+            if (w.isEmpty()) continue;
+            if (!hay.contains(w)) {
+                if (allWords) return 0;
+                continue;
+            }
+            hits++;
+            if (name.startsWith(w)) score += 120;
+            else if (name.contains(w)) score += 60;
+            else if (dev.contains(w)) score += 25;
+            else if (cat.contains(w) || sub.contains(w)) score += 12;
+            else score += 6;
+        }
+        if (hits == 0) return 0;
+        if (name.equalsIgnoreCase(String.join(" ", words))) score += 250;
+        return score;
+    }
+
     private void drawResults() {
         while (view.getChildCount() > 1) view.removeViewAt(1);
         String q = query.trim().toLowerCase();
@@ -2462,10 +3277,22 @@ public class MainActivity extends Activity {
         if (q.isEmpty()) {
             for (int i = 0; i < Math.min(20, repo.apps.size()); i++) list.add(repo.apps.get(i));
         } else {
+            String[] words = q.split("\\s+");
+            final java.util.HashMap<String, Integer> sc = new java.util.HashMap<>();
             for (AppItem a : repo.apps) {
-                String hay = (a.name + " " + a.category + " " + a.description).toLowerCase();
-                if (hay.contains(q)) list.add(a);
+                int s = matchScore(a, words, true);
+                if (s > 0) { list.add(a); sc.put(a.id, s); }
             }
+            if (list.isEmpty()) {
+                for (AppItem a : repo.apps) {
+                    int s = matchScore(a, words, false);
+                    if (s > 0) { list.add(a); sc.put(a.id, s); }
+                }
+            }
+            list.sort((x, y) -> {
+                Integer sy = sc.get(y.id), sx = sc.get(x.id);
+                return Integer.compare(sy == null ? 0 : sy, sx == null ? 0 : sx);
+            });
         }
         String[] alt = findAlt(q);
         java.util.LinkedHashSet<String> found = new java.util.LinkedHashSet<>();
@@ -2495,12 +3322,13 @@ public class MainActivity extends Activity {
             }
             return;
         }
-        int cap = Math.min(list.size(), MAX_RESULTS);
+        int cap = showAll ? list.size() : Math.min(list.size(), MAX_RESULTS);
         for (int i = 0; i < cap; i++) view.addView(row(list.get(i)));
         if (list.size() > cap) {
-            TextView more = tv("Showing first " + cap + " of " + list.size()
-                    + " results. Keep typing to narrow it down.", 12.5f, MUTED);
-            more.setPadding(dp(16), dp(12), dp(16), dp(20));
+            TextView more = bold(tv("Show all " + list.size() + " results  \u203A", 13, GREEN2));
+            more.setPadding(dp(16), dp(14), dp(16), dp(20));
+            more.setContentDescription("Show all results");
+            more.setOnClickListener(v -> { showAll = true; render(); });
             view.addView(more);
         }
     }
@@ -2639,6 +3467,15 @@ public class MainActivity extends Activity {
             rowv.setOnClickListener(v -> showLegal(dt, db));
             legal.addView(rowv);
         }
+        View proRow = tile(R.drawable.ic_apps, "Digital products (web & apps)");
+        proRow.setContentDescription("Digital products");
+        proRow.setOnClickListener(v -> showProducts());
+        legal.addView(proRow);
+
+        View licRow = tile(R.drawable.ic_info, "Open Source Licenses");
+        licRow.setContentDescription("Open Source Licenses");
+        licRow.setOnClickListener(v -> showLicenses());
+        legal.addView(licRow);
         view.addView(legal);
 
         List<AppItem> sv = new ArrayList<>();
